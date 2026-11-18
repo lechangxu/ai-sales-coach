@@ -1,0 +1,31 @@
+[project]
+name = "ai-sales-coach"
+version = "0.1.0"
+description = "AI sales coach MVP: transcript -> evidence-bound review -> whitelisted CRM projection"
+requires-python = ">=3.11"
+dependencies = [
+    # fastapi 钉在 0.136.x：0.137.0 起 include_router 改为惰性 _IncludedRouter 节点，
+    # app.routes 不再是扁平 Route 列表（每项都带 .path）。本仓的端点清单断言与 README
+    # 的排障方式都按扁平语义写，升到 0.137+ 会直接 AttributeError。
+    "fastapi>=0.136.3,<0.137",
+    "uvicorn>=0.30",
+    "sqlalchemy>=2.0.30",
+    "psycopg[binary]>=3.1",
+    "alembic>=1.13",
+    "pydantic>=2.7",
+    "pyyaml>=6.0",
+    "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

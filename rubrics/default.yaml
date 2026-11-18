@@ -1,0 +1,43 @@
+name: b2b-steel-sales-v1
+description: B2B 钢材贸易销售通话复盘框架
+dimensions:
+  - key: discovery
+    name: 需求挖掘
+    weight: 30
+    levels:
+      - score: 1
+        text: 没有提问，直接报价
+      - score: 3
+        text: 问了品类和数量，未触及项目节点
+      - score: 5
+        text: 锁定项目节点、用量、账期与决策链
+  - key: objection
+    name: 异议处理
+    weight: 25
+    levels:
+      - score: 1
+        text: 回避客户价格异议
+      - score: 3
+        text: 用单次让价应对
+      - score: 5
+        text: 用承兑贴息与锁价窗口拆解异议
+  - key: closing
+    name: 推进承诺
+    weight: 25
+    levels:
+      - score: 1
+        text: 结束没有下一步
+      - score: 3
+        text: 约了下一次沟通但无具体动作
+      - score: 5
+        text: 拿到明确动作：锁量、试样或签约时间
+  - key: rapport
+    name: 关系与倾听
+    weight: 20
+    levels:
+      - score: 1
+        text: 打断客户、自说自话
+      - score: 3
+        text: 有回应但未确认理解
+      - score: 5
+        text: 复述并确认客户关切
