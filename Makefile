@@ -1,6 +1,6 @@
 PY := .venv/bin/python
 
-.PHONY: db-up db-down migrate seed-demo test live-smoke
+.PHONY: db-up db-down migrate seed-demo test eval live-smoke
 
 db-up:
 	docker compose up -d --wait db
@@ -17,6 +17,10 @@ seed-demo: migrate
 
 test: db-up
 	$(PY) -m pytest -q
+
+# One-command quality eval: migrate + seed + QWK over the 50 synthetic calls.
+eval: seed-demo
+	$(PY) scripts/eval_qwk.py --expect-stable-rerun --expect-scored-min 50
 
 live-smoke: seed-demo
 	LLM_BACKEND=stub $(PY) scripts/live_smoke.py

@@ -96,6 +96,53 @@ rubric 状态机：`draft → active → archived`。导入即校验权重和 = 
 | POST | `/rubrics/{id}/activate` | 激活版本 |
 | POST | `/scorecards` | 主管按 active rubric 打分 |
 
+## 质量评估（W2）
+
+`make eval`（= migrate + seed-demo + eval_qwk）对 50 通合成语料跑一遍复盘质量评估：
+每通复盘 → 确定性评分器给五个维度分（D1 引用密度 / D2 需求覆盖 / D3 弱点精确度 /
+D4 行动可执行性 / D5 结构完整）与加权总分，再与金标算 **QWK（quadratic weighted kappa）**
+和逐档混淆矩阵，结果落 `eval_runs` / `eval_scores` 两张 eval 专属表。
+
+单跑：
+
+```bash
+.venv/bin/python scripts/eval_qwk.py --expect-stable-rerun
+# qwk=… qwk_by_dimension=… confusion=… eval_run_id=… eval_isolation=OK
+```
+
+**金标是生成器的设计档位（good=5 / mid=3 / bad=1），设计档位不是人评。** 它衡量的是
+「评分器读出的内容与该通电话的设计强度是否同向」，不是「复盘说得好不好」；真实信度要靠下面
+的人工校准。`--expect-stable-rerun` 在同一进程跑两轮并要求 QWK、逐维 QWK、混淆矩阵逐位相同 ——
+漂移监控拿它当基线，基线自己会晃就没有意义。
+
+分数怎么算（常数写死在 `app/services/eval_scoring.py`，改常数即换尺子，等于开新卡）：
+
+| 维度 | 口径 | 1 / 3 / 5 |
+|---|---|---|
+| D1 引用密度 | 五类条目中带非空引用的占比 | `0` / `(0,0.5]` / `>0.5`；空复盘直接记 1 |
+| D2 需求覆盖 | `needs` 条数 | 0 / 1 / ≥2 |
+| D3 弱点精确度 | `weaknesses` 条数 | 0 / 1 / ≥2 |
+| D4 行动可执行性 | `next_actions` 含时间/数量/角色线索的占比 | `0` / `(0,0.5]` / `>0.5` |
+| D5 结构完整 | 七字段齐全、非空、praise 非占位 | 二值：1 / 5 |
+
+总分 = `0.3·D1 + 0.2·D2 + 0.2·D3 + 0.2·D4 + 0.1·D5` 四舍五入并夹到 [1,5]。
+整套评分不调用 LLM：LLM 打分不可回归，且会把「prompt 漂移」和「评委漂移」耦成一个变量。
+
+**读懂数字。** 离线 stub 后端对每通电话产出同一套条目（它对档位是盲的），所以预测标签恒定、
+QWK 按定义就是 0 —— 这时的 eval 验的是链路与确定性，不是质量。接上真实 LLM 后端后，同一条命令
+才是真正的质量度量。
+
+### 人工校准（一次性）
+
+```bash
+.venv/bin/python scripts/make_calibration_sheet.py --count 10 --out calib.csv
+# 表头 transcript_id,title,human_score,note；human_score 留空；文件里没有档位、没有 AI 分（盲评）
+.venv/bin/python scripts/eval_human.py --scores calib.csv   # 填完后读回，打印 human_qwk=
+```
+
+留空的行会被跳过（填一半的表现在是正常状态）；非空但不是 1-5 整数（含 `-1`、`abc`）直接
+报错并指出行号；一行有效评分都没有时 exit 2 —— 没有可比数据不是「通过」。
+
 ## 已知限制
 
 - **模糊匹配可能命中语义相反的句子。** 阈值 0.9 用的是 `difflib.SequenceMatcher` 的字符
@@ -110,7 +157,8 @@ rubric 状态机：`draft → active → archived`。导入即校验权重和 = 
 - **不做 ASR。** 转写文本由调用方提供（W1 范围）。
 - **不做前端。** 演示走 OpenAPI docs。
 - **不做话术库检索。** pgvector 已随 compose 起好，W1 未使用。
-- **W2 未做。** 金标集 QWK 一致性、分数漂移监控在 W2。
+- **W2 第二批未做。** 分数漂移监控（用本节的 eval 基线判定 prompt/model 改动是否让分数分布偏移）
+  留给 W2 第二批。
 - **stub 后端只用于演示与冒烟**，它产出的是固定结构，不代表真实复盘质量。
   stub 的 `praise` 固定引用开场那一句，语义是否贴切不做保证——它验的是链路，不是文采。
 - **fastapi 钉在 0.136.x。** 0.137.0 起 `include_router` 改为惰性 `_IncludedRouter` 节点，

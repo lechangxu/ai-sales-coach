@@ -5,10 +5,19 @@ column of any kind. Supervisor scoring has its own table (``scorecards``),
 its own rows, and its own read path.
 """
 
+from app.models.eval import EvalRun, EvalScore
 from app.models.projection import Projection
 from app.models.review import Review
 from app.models.rubric import Rubric
 from app.models.scorecard import Scorecard
 from app.models.transcript import Transcript
 
-__all__ = ["Projection", "Review", "Rubric", "Scorecard", "Transcript"]
+__all__ = [
+    "EvalRun",
+    "EvalScore",
+    "Projection",
+    "Review",
+    "Rubric",
+    "Scorecard",
+    "Transcript",
+]
